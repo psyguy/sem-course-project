@@ -3,7 +3,7 @@ title: "Dynamic SEM on ESM Data"
 subtitle: "Structural Equation Modeling Course Project - KU Leuven"
 author: "MohammadHossein Manuel Haqiqatkhah - R0607671"
 date: "2019-08-19"
-bibliography: bibliography.bib
+bibliography: references.bib
 output: pdf_document
 ---
 
@@ -33,6 +33,9 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r cars}
 summary(cars)
 ```
+
+
+
 
 ## Including Plots
 

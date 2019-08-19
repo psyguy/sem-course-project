@@ -1,0 +1,45 @@
+---
+title: "Dynamic SEM on ESM Data"
+subtitle: "Structural Equation Modeling Course Project - KU Leuven"
+author: "MohammadHossein Manuel Haqiqatkhah - R0607671"
+date: "2019-08-19"
+bibliography: bibliography.bib
+output: pdf_document
+---
+
+
+```{r setup, include = FALSE, echo = FALSE}
+list.of.packages <- c("tidyverse",
+                      "plyr",
+                      "dplyr",
+                      "lavaan")
+new.packages <-
+  list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+if (length(new.packages)) {
+  install.packages(new.packages, repos='http://cran.us.r-project.org')
+}
+tmp <- lapply(list.of.packages, require, character.only = TRUE)
+
+rm(list.of.packages, new.packages, tmp)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

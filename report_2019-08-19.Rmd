@@ -11,6 +11,7 @@ output: pdf_document
 ```{r setup, include = FALSE, echo = FALSE}
 list.of.packages <- c("tidyverse",
                       "plyr",
+                      "qgraph",
                       "dplyr",
                       "lavaan")
 new.packages <-

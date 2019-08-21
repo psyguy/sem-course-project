@@ -3,7 +3,7 @@ title: "Dynamic SEM on ESM Data"
 subtitle: "Structural Equation Modeling Course Project - KU Leuven"
 author: "MohammadHossein Manuel Haqiqatkhah - R0607671"
 date: "2019-08-19"
-bibliography: references.bib
+bibliography: ref.bib
 output: pdf_document
 ---
 
@@ -22,18 +22,67 @@ if (length(new.packages)) {
 tmp <- lapply(list.of.packages, require, character.only = TRUE)
 
 rm(list.of.packages, new.packages, tmp)
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
+
 ```
 
-## R Markdown
+```{r handy-functions}
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+pagebreak <- function(){
+  if(knitr::is_latex_output())
+    return("\\newpage")
+  else
+    return('<div style="page-break-before: always;" />')
+}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```
+
+
+# Introduction
+
+Experience sampling method (ESM)
+
+
 
 ```{r cars}
-summary(cars)
+library(lavaan)
+
+# load/prep data
+data <- read.table("http://www.statmodel.com/usersguide/chap5/ex5.8.dat")
+names(data) <- c(paste("y", 1:6, sep=""), paste("x", 1:3, sep=""))
+
+# model 1 - canonical mimic model (using the '~' regression operator)
+model1 <- '
+    f1 =~ y1 + y2 + y3
+    f1 ~ x1 + x2 + x3
+'
+
+# model 2 - seemingly the same (using the '<~' composite operator)
+model2 <- '
+    f1 =~ y1 + y2 + y3
+    # f1 <~ x1 + x2 + x3
+'
+# model 3 - only reflective
+model3 <- '
+    f1 =~ y1 + y2 + y3
+    # f1 <~ x1 + x2 + x3
+'
+# model 4 - only formative
+model4 <- '
+    f1 ~ y1 + y2 + y3
+    # f1 <~ x1 + x2 + x3
+'
+
+# run lavaan
+fit1 <- sem(model1, data=data, std.lv=TRUE)
+fit2 <- sem(model2, data=data, std.lv=TRUE)
+fit3 <- sem(model3, data=data, std.lv=TRUE)
+fit4 <- sem(model4, data=data, std.lv=TRUE)
+
+# test equality - only the operators are different
+all.equal(parameterEstimates(fit1), parameterEstimates(fit2))
 ```
+
 
 
 
@@ -47,3 +96,15 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+```{r writing-bib}
+bib <- "
+
+
+
+"
+
+writeLines(bib, con = "ref.bib")
+```

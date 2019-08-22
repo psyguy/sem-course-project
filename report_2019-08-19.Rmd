@@ -38,18 +38,147 @@ pagebreak <- function(){
 ```
 
 
+```{r model-making}
+
+make.factors <- function(items,
+                         factor.name = "f",
+                         add.factor.name = TRUE,
+                         num.times = 2,
+                         skip.first = 0,
+                         substr.length = 3){
+  factor.postfix <- ""
+
+  if(add.factor.name) factor.postfix <- paste0(".",factor.name)
+  loadings <- items %>%
+    substring(skip.first + 1, skip.first + substr.length) %>%
+    paste0(factor.postfix, "*")
+  loadings[1] <- "1*"
+  
+  out <- c()  
+  for(time in 1:num.times){
+    items.here <- items %>% paste0(".",time)
+    RHS.string <- paste(loadings, items.here, sep = "", collapse = " + ")
+    factor.string <- paste(factor.name, ".", time, " =~ ",
+                           RHS.string, sep = "")
+    out <- out %>% c(factor.string)
+  }
+  out %>% return()
+}
+
+ar <- function(items, op = "~"){
+  paste(paste0(items,".2"),op, paste0(items,".1"))
+}
+
+my.lav.model.maker <- function(inp.lagged,
+                               add.resid.serial.AR = TRUE,
+                               add.resid.serial.COV = FALSE,
+                               add.posneg = TRUE,
+                               add.posneg.AR = TRUE,
+                               add.communal.VAR = TRUE,
+                               add.factor.COV = TRUE,
+                               communal.names = c("f","g")){
+  
+  # add = c("residAR", "factorVAR", "residCOR")
+  
+  model.strings <- c()
+  
+  # building lists of items
+  items.pos <- inp.lagged$items.pos
+  items.neg <- inp.lagged$items.neg
+  items.all <- inp.lagged$items.all
+  
+
+  # AR/AC terms
+  if(add.resid.serial.AR | add.resid.serial.COV){
+    op <- " ~ "
+    if(add.resid.serial.COV) op <- " ~~ "
+    added.string <- items.all %>% ar(op)
+    model.strings <- model.strings %>% c(added.string)
+  }
+  
+  # factor terms
+  if(add.posneg){
+    pos.string <- items.pos %>% make.factors(factor.name = "pos")
+    neg.string <- items.neg %>% make.factors(factor.name = "neg")
+    model.strings <- model.strings %>% c(pos.string, neg.string)
+  }
+  
+  for(f.name in communal.names){
+    added.string <- items.all %>% make.factors(factor.name = f.name)
+    model.strings <- model.strings %>% c(added.string)
+  }
+  model.strings %>% return()
+}
+
+
+my.lagger <- function(input,
+                      items,
+                      identifiers = NULL){
+    
+  cnames.1 <- items %>% paste0(".1")
+  cnames.2 <- items %>% paste0(".2")
+
+  d.items <- input %>%
+    select(items)
+  d.identifiers <- input %>%
+    select(identifiers)
+  
+  d.lagged <- d.items[-1,] %>% 
+    rbind(NA)
+
+  d.out <- cbind(d.identifiers, d.items, d.lagged)
+  colnames(d.out) <- c(identifiers, cnames.1, cnames.2)
+
+  d.out %>% return()
+}
+
+```
+
+
 # Introduction
 
 Experience sampling method (ESM)
+
+```{r data-prep}
+
+# load data
+data <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESMdata.csv")
+
+# subset the needed data
+d <- data %>% select(concentrat, dayno, beepno,
+                     contains("mood_"))
+items.p <- c("mood_relaxed",
+             "mood_satisfi",
+             "mood_enthus",
+             "mood_cheerf",
+             "mood_strong")
+
+items.n <- c("mood_down",
+             "mood_irritat",
+             "mood_lonely",
+             "mood_anxious",
+             "mood_suspic",
+             "mood_guilty",
+             "mood_doubt")
+identifiers <- c("concentrat",
+                 "dayno",
+                 "beepno")
+
+f <- make.factors(items = items.p,
+                  factor.name = "pa",
+                  num.times = 2,
+                  skip.first = 5)
+
+d.lagged.1 <- d %>% my.lagger(items = items.p, identifiers = identifiers)
+
+fit.0 <- sem(f, data=d.lagged.1, std.lv=TRUE)
+```
 
 
 
 ```{r cars}
 library(lavaan)
 
-# load/prep data
-data <- read.table("http://www.statmodel.com/usersguide/chap5/ex5.8.dat")
-names(data) <- c(paste("y", 1:6, sep=""), paste("x", 1:3, sep=""))
 
 # model 1 - canonical mimic model (using the '~' regression operator)
 model1 <- '
@@ -77,7 +206,7 @@ model4 <- '
 fit1 <- sem(model1, data=data, std.lv=TRUE)
 fit2 <- sem(model2, data=data, std.lv=TRUE)
 fit3 <- sem(model3, data=data, std.lv=TRUE)
-fit4 <- sem(model4, data=data, std.lv=TRUE)
+# fit4 <- sem(model4, data=data, std.lv=TRUE)
 
 # test equality - only the operators are different
 all.equal(parameterEstimates(fit1), parameterEstimates(fit2))
@@ -108,3 +237,36 @@ bib <- "
 
 writeLines(bib, con = "ref.bib")
 ```
+
+
+# Load cache from a latter code chunk
+
+Sometimes we may want to insert an object value early in the document, when the object has not been created. [For example](http://stackoverflow.com/q/18581027/559676), you may want to mention a result in your abstract using an inline R expression, but the result is calculated later in the report.
+
+One solution is to `save()` the workspace in a `.RData` file in the end of the document, and `load()` it in the beginning, e.g.
+
+```{r}
+x = 'NOT YET AVAILABLE'  # an object to be used
+if (file.exists('everything.RData')) load('everything.RData')
+```
+
+In the end of the document, you save the workspace:
+
+```{r eval=FALSE}
+save.image('everything.RData')
+```
+
+Then you can use `` `r x` `` after `everything.RData` is loaded. When it is not available, you will see `x` as ``r x``.
+
+The function `load_cache()` is an alternative solution, which allows you to load the value of an object from a specific code chunk, when the chunk has been cached.
+
+For example, there is no object called `y` that has been created in this document yet, but we can still insert it here: ``r knitr::load_cache('test-a', 'y')``, as long as it will be created in the code chunk with the label `test-a` later.
+
+```{r test-a, cache=TRUE}
+y <- 2*pi
+```
+
+The first time you compile the document, you will see `y` is `NOT AVAILABLE`, but when you compile it for the second time, you will see its value ``r y``.
+
+You do not have to specify the object name in `load_cache()`, in which case the database will just be loaded, and you can use any objects available in the database as if they had been computed by the code chunk later.
+

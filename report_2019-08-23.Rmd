@@ -198,6 +198,45 @@ items <- list(
                            )
               )
 
+# Epskamp
+items <- list(
+              anxiety = c("anxious",
+                           "guilty",
+                           "lonely"
+                           ),
+              
+              selfcon = c("ashamed",
+                           "lonely",
+                           "guilty",
+                           "worry"
+                           ),
+              
+              somatiz = c(#"dizzy",
+                           #"drymouth",
+                           "headache",
+                           #"nauseous",
+                           "sleepy",
+                           "tired"
+                           ),
+              
+              posacti = c(#"cheerf",
+                           #"concent",
+                           #"enjoy",
+                           "enthus",
+                           #"relaxed",
+                           "satisfi",
+                           "sleepy",
+                           "strong"
+                           ),
+              
+              negacti = c("agitate",
+                           #"down",
+                           "irritat",
+                           "restl",
+                           "sleepy"
+                           )
+              )
+
 noniden <- items %>%
   unlist() %>% 
   unique() %>% 
@@ -229,7 +268,7 @@ dl <- d %>% my.lagger(items = noniden)
 dl.1 <- dl %>% select(contains(".1")) %>% na.omit()
 p <- dl.1 %>% princomp(3)
 
-e <- fa(dl.1)
+e <- psych::fa(dl.1, 5)
 
 ```
 

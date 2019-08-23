@@ -61,8 +61,10 @@ items <- list(
   
 )
 
+## reading, selecting, and saving the abridged data to GitHub
 # data.orig <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESS8e02.1_F1.csv")
 # data.orig <- read.csv("data/ESS8e02.1_F1.csv")
 # d <- data.orig %>% select(cntry, as.character(unlist(items)))
 # d %>% write.csv("data/ess2016_selected.csv", row.names = FALSE)
 
+d <- read.csv("https://github.com/psyguy/sem-course-project/raw/master/data/ess2016_selected.csv")

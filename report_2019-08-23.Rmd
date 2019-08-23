@@ -68,6 +68,7 @@ make.factors <- function(items,
                            RHS.string, sep = "")
     out <- out %>% c(factor.string)
   }
+  out <- out %>% paste(sep = "", collapse = " + ")
   out %>% return()
 }
 
@@ -151,74 +152,80 @@ Experience sampling method (ESM)
 data.orig <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESMdata.csv")
 
 
-items.identif <- c("concentrat",
+identif <- c("concentrat",
                    "dayno",
                    "beepno"
                    )
+items <- list(
+              anxiety = c("anxious",
+                           "doubt",
+                           "guilty",
+                           "lonely",
+                           "suspic",
+                           "worry"
+                           ),
+              
+              selfcon = c("ashamed",
+                           "lonely",
+                           "guilty",
+                           "selfdoub",
+                           "worry"
+                           ),
+              
+              somatiz = c("dizzy",
+                           "drymouth",
+                           "headache",
+                           "nauseous",
+                           "sleepy",
+                           "tired"
+                           ),
+              
+              posacti = c("cheerf",
+                           "concent",
+                           "enjoy",
+                           "enthus",
+                           "relaxed",
+                           "satisfi",
+                           "strong"
+                           ),
+              
+              negacti = c("agitate",
+                           "down",
+                           "irritat",
+                           "restl",
+                           "sleepy"
+                           )
+              )
 
-items.anxiety <- c("anxious",
-                   "doubt",
-                   "guilty",
-                   "lonely",
-                   "suspic",
-                   "worry"
-                   )
-
-items.selfcon <- c("ashamed",
-                   "lonely",
-                   "guilty",
-                   "selfdoub",
-                   "worry"
-                   )
-
-items.somatiz <- c("dizzy",
-                   "drymouth",
-                   "headache",
-                   "nauseous",
-                   "sleepy",
-                   "tired"
-                   )
-
-items.posacti <- c("cheerf",
-                   "concent",
-                   "enjoy",
-                   "enthus",
-                   "relaxed",
-                   "satisfi",
-                   "strong"
-                   )
-
-items.negacti <- c("agitate",
-                   "down",
-                   "irritat",
-                   "restl",
-                   "sleepy"
-                   )
-
-items.noniden <- c(items.anxiety,
-                   items.selfcon,
-                   items.somatiz,
-                   items.posacti,
-                   items.negacti) %>% 
+noniden <- items %>%
+  unlist() %>% 
   unique() %>% 
   sort()
 
 data <- data.orig %>% select(-contains("_med"))
-
 colnames(data) <- gsub(".*_", "", colnames(data))
-
-d <- data %>% select(items.identif, items.noniden)
-
-
-
-f <- make.factors(items = c(items.p, items.n),
-                  factor.name = "g",
-                  num.times = 1,
-                  skip.first = 5)
-
-d.l <- d %>% my.lagger(items = c(items.p, items.n), identifiers = identifiers)
+d <- data %>% select(identif, noniden)
 
 ```
+
+
+```{r model-syntax}
+
+m <- list()
+
+for(i in 1:length(items)){
+  print(i)
+  f.name <- names(items)[[i]]
+  m[[i]] <- make.factors(items = items[[i]],
+                       factor.name = f.name,
+                       num.times = 3)
+  names(m)[[i]] <- f.name
+}
+
+
+
+```
+
 
 
 

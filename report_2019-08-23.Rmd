@@ -204,13 +204,13 @@ items <- list(
                            "guilty",
                            "lonely"
                            ),
-              
+
               selfcon = c("ashamed",
                            "lonely",
                            "guilty",
                            "worry"
                            ),
-              
+
               somatiz = c(#"dizzy",
                            #"drymouth",
                            "headache",
@@ -218,7 +218,7 @@ items <- list(
                            "sleepy",
                            "tired"
                            ),
-              
+
               posacti = c(#"cheerf",
                            #"concent",
                            #"enjoy",
@@ -228,7 +228,7 @@ items <- list(
                            "sleepy",
                            "strong"
                            ),
-              
+
               negacti = c("agitate",
                            #"down",
                            "irritat",
@@ -242,7 +242,9 @@ noniden <- items %>%
   unique() %>% 
   sort()
 
-data <- data.orig %>% select(-contains("_med"))
+data <- data.orig %>% 
+  select(-contains("_med")) %>% 
+  filter(beepno ==5)
 colnames(data) <- gsub(".*_", "", colnames(data))
 d <- data %>% select(identif, noniden)
 

@@ -17,6 +17,7 @@ list.of.packages <- c("tidyverse",
                       "dplyr",
                       "kable",
                       "kableExtra",
+                      "semPlot",
                       "lavaan")
 new.packages <-
   list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
@@ -209,50 +210,70 @@ d <- data %>% select(identif, noniden)
 ```
 
 
-```{r model-syntax}
+```{r model-syntax, include=TRUE, echo=TRUE}
 
 m <- list()
 
 for(i in 1:length(items)){
-  print(i)
   f.name <- names(items)[[i]]
   m[[i]] <- make.factors(items = items[[i]],
                        factor.name = f.name,
-                       num.times = 3)
+                       num.times = 1)
   names(m)[[i]] <- f.name
 }
 
+# mm <- m %>% paste(collapse = " \n \n ") %>% cat( )
 
+dl <- d %>% my.lagger(items = noniden)
+
+dl.1 <- dl %>% select(contains(".1")) %>% na.omit()
+p <- dl.1 %>% princomp(3)
+
+e <- fa(dl.1)
 
 ```
 
+```{r model-fitting}
 
+mm <- "
 
+anxiety.1 =~ 1*anxious.1 + dou.anxiety*doubt.1 + gui.anxiety*guilty.1 + lon.anxiety*lonely.1 + sus.anxiety*suspic.1 + wor.anxiety*worry.1 
+ 
+ selfcon.1 =~ 1*ashamed.1 + lon.selfcon*lonely.1 + gui.selfcon*guilty.1 + sel.selfcon*selfdoub.1 + wor.selfcon*worry.1 
+ 
+ somatiz.1 =~ 1*drymouth.1 + hea.somatiz*headache.1 + sle.somatiz*sleepy.1 + tir.somatiz*tired.1 
+ 
+ posacti.1 =~ 1*cheerf.1 + con.posacti*concent.1 + enj.posacti*enjoy.1 + ent.posacti*enthus.1 + rel.posacti*relaxed.1 + sat.posacti*satisfi.1 + str.posacti*strong.1 
+ 
+ negacti.1 =~ 1*agitate.1 + dow.negacti*down.1 + irr.negacti*irritat.1 + res.negacti*restl.1 + sle.negacti*sleepy.1
 
-```{r pa-na-simple, echo = TRUE}
+#anxiety.1 ~~ selfcon.1 +  posacti.1 + negacti.1 + somatiz.1
 
-m_pa.na.simp <- "
-  
-  pa.1 =~ 1*mood_relaxed.1 + sat.f*mood_satisfi.1 + ent.f*mood_enthus.1 + che.f*mood_cheerf.1 + str.f*mood_strong.1
-  
-  na.1 =~ dow.f*mood_down.1 + irr.f*mood_irritat.1 + lon.f*mood_lonely.1 + anx.f*mood_anxious.1 + sus.f*mood_suspic.1 + gui.f*mood_guilty.1 + dou.f*mood_doubt.1
-  
-    mu =~ mood_relaxed.1 + sat.f*mood_satisfi.1 + ent.f*mood_enthus.1 + che.f*mood_cheerf.1 + str.f*mood_strong.1 + dow.f*mood_down.1 + irr.f*mood_irritat.1 + lon.f*mood_lonely.1 + anx.f*mood_anxious.1 + sus.f*mood_suspic.1 + gui.f*mood_guilty.1 + dou.f*mood_doubt.1
-  
-  pa.1 ~~ na.1 + mu
-  
-  #pa.1 ~ concentrat
-  #na.1 ~ concentrat
-  mu ~ concentrat
+anxiety.1 ~~ 1*anxiety.1
+selfcon.1 ~~ 1*selfcon.1
+somatiz.1 ~~ 1*somatiz.1
+posacti.1 ~~ 1*posacti.1
+negacti.1 ~~ 1*negacti.1
+ 
+ # anxious.1 ~~ anxious.1
+ # doubt.1 ~~ doubt.1
+ # guilty.1 ~~ guilty.1
+ # lonely.1 ~~ lonely.1
+ # suspic.1 ~~ suspic.1
+ # worry.1 ~~ worry.1
+
 
 "
 
-f_pa.na.simp <- sem(m_pa.na.simp, data = d.l, std.lv = TRUE)
+f <- cfa(mm, na.omit(dl), std.lv = TRUE, ordered = colnames(dl))
 
-f_pa.na.simp %>% summary(standardized = TRUE)# %>% kable(format = "html")
-f_pa.na.simp %>% fitmeasures()
-(modind <- f_pa.na.simp %>% modificationindices())
+f %>% summary(standardized=TRUE)
+f %>% fitmeasures()
 
-
-
+inspect(f, what = "std.lv")$psi
+# f %>% modificationindices() %>% as.data.frame() %>% group_by(mi)
+x$psi
+# dl %>% na.omit %>% cor() %>% eigen()
 ```
+
+

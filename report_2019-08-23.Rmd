@@ -275,22 +275,21 @@ e <- psych::fa(dl.1, 5)
 ```{r model-fitting}
 
 mm <- "
+# anxiety.1 =~ 1*anxious.1 + gui.anxiety*guilty.1 + lon.anxiety*lonely.1 
+#  
+#  selfcon.1 =~ 1*ashamed.1 + lon.selfcon*lonely.1 + gui.selfcon*guilty.1 + wor.selfcon*worry.1 
+#  
+#  somatiz.1 =~ 1*headache.1 + sle.somatiz*sleepy.1 + tir.somatiz*tired.1 
+#  
+ posacti.1 =~ 1*enthus.1 + sat.posacti*satisfi.1 + sle.posacti*sleepy.1 + str.posacti*strong.1 
+ 
+ negacti.1 =~ 1*agitate.1 + irr.negacti*irritat.1 + res.negacti*restl.1 + sle.negacti*sleepy.1
 
-anxiety.1 =~ 1*anxious.1 + dou.anxiety*doubt.1 + gui.anxiety*guilty.1 + lon.anxiety*lonely.1 + sus.anxiety*suspic.1 + wor.anxiety*worry.1 
- 
- selfcon.1 =~ 1*ashamed.1 + lon.selfcon*lonely.1 + gui.selfcon*guilty.1 + sel.selfcon*selfdoub.1 + wor.selfcon*worry.1 
- 
- somatiz.1 =~ 1*drymouth.1 + hea.somatiz*headache.1 + sle.somatiz*sleepy.1 + tir.somatiz*tired.1 
- 
- posacti.1 =~ 1*cheerf.1 + con.posacti*concent.1 + enj.posacti*enjoy.1 + ent.posacti*enthus.1 + rel.posacti*relaxed.1 + sat.posacti*satisfi.1 + str.posacti*strong.1 
- 
- negacti.1 =~ 1*agitate.1 + dow.negacti*down.1 + irr.negacti*irritat.1 + res.negacti*restl.1 + sle.negacti*sleepy.1
-
-#anxiety.1 ~~ selfcon.1 +  posacti.1 + negacti.1 + somatiz.1
-
-anxiety.1 ~~ 1*anxiety.1
-selfcon.1 ~~ 1*selfcon.1
-somatiz.1 ~~ 1*somatiz.1
+# anxiety.1 ~~ selfcon.1 +  posacti.1 + negacti.1 + somatiz.1
+posacti.1 ~~ negacti.1
+# anxiety.1 ~~ 1*anxiety.1
+# selfcon.1 ~~ 1*selfcon.1
+# somatiz.1 ~~ 1*somatiz.1
 posacti.1 ~~ 1*posacti.1
 negacti.1 ~~ 1*negacti.1
  
@@ -304,14 +303,14 @@ negacti.1 ~~ 1*negacti.1
 
 "
 
-f <- cfa(mm, na.omit(dl), std.lv = TRUE, ordered = colnames(dl))
+f <- cfa(mm, na.omit(dl), std.lv = TRUE)#, ordered = colnames(dl))
 
 f %>% summary(standardized=TRUE)
 f %>% fitmeasures()
 
 inspect(f, what = "std.lv")$psi
 # f %>% modificationindices() %>% as.data.frame() %>% group_by(mi)
-x$psi
+# x$psi
 # dl %>% na.omit %>% cor() %>% eigen()
 ```
 

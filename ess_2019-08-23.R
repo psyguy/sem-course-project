@@ -67,4 +67,13 @@ items <- list(
 # d <- data.orig %>% select(cntry, as.character(unlist(items)))
 # d %>% write.csv("data/ess2016_selected.csv", row.names = FALSE)
 
-d <- read.csv("https://github.com/psyguy/sem-course-project/raw/master/data/ess2016_selected.csv")
+data <- read.csv("https://github.com/psyguy/sem-course-project/raw/master/data/ess2016_selected.csv")
+
+
+# cleaning/recoding the data ----------------------------------------------
+
+d <- data[rowSums(data[,2:24]>11),]
+
+# making model syntaxes ---------------------------------------------------
+
+

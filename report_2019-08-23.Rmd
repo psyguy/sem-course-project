@@ -146,16 +146,67 @@ Experience sampling method (ESM)
 ```{r data-prep}
 
 # load data
-data <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESMdata.csv")
-
-colnames(data) <- gsub(".*_", "", colnames(data))
-# subset the needed data
-
-items.
+data.orig <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESMdata.csv")
 
 
-d <- data %>% select(concentrat, dayno, beepno,
-                     contains("mood_"))
+items.identif <- c("concentrat",
+                   "dayno",
+                   "beepno"
+                   )
+
+items.anxiety <- c("anxious",
+                   "doubt",
+                   "guilty",
+                   "lonely",
+                   "suspic",
+                   "worry"
+                   )
+
+items.selfcon <- c("ashamed",
+                   "lonely",
+                   "guilty",
+                   "selfdoub",
+                   "worry"
+                   )
+
+items.somatiz <- c("dizzy",
+                   "drymouth",
+                   "headache",
+                   "nauseous",
+                   "sleepy",
+                   "tired"
+                   )
+
+items.posacti <- c("cheerf",
+                   "concent",
+                   "enjoy",
+                   "enthus",
+                   "relaxed",
+                   "satisfi",
+                   "strong"
+                   )
+
+items.negacti <- c("agitate",
+                   "down",
+                   "irritat",
+                   "restl",
+                   "sleepy"
+                   )
+
+items.noniden <- c(items.anxiety,
+                   items.selfcon,
+                   items.somatiz,
+                   items.posacti,
+                   items.negacti) %>% 
+  unique() %>% 
+  sort()
+
+data.tmp <- data.orig
+
+colnames(data.tmp) <- gsub(".*_", "", colnames(data.tmp))
+
+
+d <- data.orig %>% select(contains(items.identif), contains(items.noniden))
 items.p <- c("mood_relaxed",
              "mood_satisfi",
              "mood_enthus",

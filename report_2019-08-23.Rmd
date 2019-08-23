@@ -28,6 +28,8 @@ tmp <- lapply(list.of.packages, require, character.only = TRUE)
 rm(list.of.packages, new.packages, tmp)
 knitr::opts_chunk$set(echo = FALSE)
 
+# rm(list = ls())
+
 ```
 
 ```{r handy-functions}
@@ -201,28 +203,13 @@ items.noniden <- c(items.anxiety,
   unique() %>% 
   sort()
 
-data.tmp <- data.orig
+data <- data.orig %>% select(-contains("_med"))
 
-colnames(data.tmp) <- gsub(".*_", "", colnames(data.tmp))
+colnames(data) <- gsub(".*_", "", colnames(data))
+
+d <- data %>% select(items.identif, items.noniden)
 
 
-d <- data.orig %>% select(contains(items.identif), contains(items.noniden))
-items.p <- c("mood_relaxed",
-             "mood_satisfi",
-             "mood_enthus",
-             "mood_cheerf",
-             "mood_strong")
-
-items.n <- c("mood_down",
-             "mood_irritat",
-             "mood_lonely",
-             "mood_anxious",
-             "mood_suspic",
-             "mood_guilty",
-             "mood_doubt")
-identifiers <- c("concentrat",
-                 "dayno",
-                 "beepno")
 
 f <- make.factors(items = c(items.p, items.n),
                   factor.name = "g",

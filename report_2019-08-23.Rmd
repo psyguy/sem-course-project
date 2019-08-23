@@ -1,10 +1,12 @@
 ---
 title: "Dynamic SEM on ESM Data"
-subtitle: "Structural Equation Modeling Course Project - KU Leuven"
 author: "MohammadHossein Manuel Haqiqatkhah - R0607671"
-date: "2019-08-19"
+date: '2019-08-23'
+output:
+  html_document:
+    df_print: paged
+subtitle: Structural Equation Modeling Course Project - KU Leuven
 bibliography: ref.bib
-output: pdf_document
 ---
 
 
@@ -13,6 +15,8 @@ list.of.packages <- c("tidyverse",
                       "plyr",
                       "qgraph",
                       "dplyr",
+                      "kable",
+                      "kableExtra",
                       "lavaan")
 new.packages <-
   list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
@@ -144,7 +148,12 @@ Experience sampling method (ESM)
 # load data
 data <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESMdata.csv")
 
+colnames(data) <- gsub(".*_", "", colnames(data))
 # subset the needed data
+
+items.
+
+
 d <- data %>% select(concentrat, dayno, beepno,
                      contains("mood_"))
 items.p <- c("mood_relaxed",
@@ -164,108 +173,41 @@ identifiers <- c("concentrat",
                  "dayno",
                  "beepno")
 
-f <- make.factors(items = items.p,
-                  factor.name = "pa",
+f <- make.factors(items = c(items.p, items.n),
+                  factor.name = "g",
                   num.times = 1,
                   skip.first = 5)
-d.lagged.1 <- d %>% my.lagger(items = items.p, identifiers = identifiers)
 
-fit.0 <- sem(f, data=d.lagged.1, std.lv=TRUE)
+d.l <- d %>% my.lagger(items = c(items.p, items.n), identifiers = identifiers)
+
 ```
 
 
 
-```{r cars}
-library(lavaan)
+```{r pa-na-simple, echo = TRUE}
 
-
-# model 1 - canonical mimic model (using the '~' regression operator)
-model1 <- '
-    f1 =~ y1 + y2 + y3
-    f1 ~ x1 + x2 + x3
-'
-
-# model 2 - seemingly the same (using the '<~' composite operator)
-model2 <- '
-    f1 =~ y1 + y2 + y3
-    # f1 <~ x1 + x2 + x3
-'
-# model 3 - only reflective
-model3 <- '
-    f1 =~ y1 + y2 + y3
-    # f1 <~ x1 + x2 + x3
-'
-# model 4 - only formative
-model4 <- '
-    f1 ~ y1 + y2 + y3
-    # f1 <~ x1 + x2 + x3
-'
-
-# run lavaan
-fit1 <- sem(model1, data=data, std.lv=TRUE)
-fit2 <- sem(model2, data=data, std.lv=TRUE)
-fit3 <- sem(model3, data=data, std.lv=TRUE)
-# fit4 <- sem(model4, data=data, std.lv=TRUE)
-
-# test equality - only the operators are different
-all.equal(parameterEstimates(fit1), parameterEstimates(fit2))
-```
-
-
-
-
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-
-
-```{r writing-bib}
-bib <- "
-
-
+m_pa.na.simp <- "
+  
+  pa.1 =~ 1*mood_relaxed.1 + sat.f*mood_satisfi.1 + ent.f*mood_enthus.1 + che.f*mood_cheerf.1 + str.f*mood_strong.1
+  
+  na.1 =~ dow.f*mood_down.1 + irr.f*mood_irritat.1 + lon.f*mood_lonely.1 + anx.f*mood_anxious.1 + sus.f*mood_suspic.1 + gui.f*mood_guilty.1 + dou.f*mood_doubt.1
+  
+    mu =~ mood_relaxed.1 + sat.f*mood_satisfi.1 + ent.f*mood_enthus.1 + che.f*mood_cheerf.1 + str.f*mood_strong.1 + dow.f*mood_down.1 + irr.f*mood_irritat.1 + lon.f*mood_lonely.1 + anx.f*mood_anxious.1 + sus.f*mood_suspic.1 + gui.f*mood_guilty.1 + dou.f*mood_doubt.1
+  
+  pa.1 ~~ na.1 + mu
+  
+  #pa.1 ~ concentrat
+  #na.1 ~ concentrat
+  mu ~ concentrat
 
 "
 
-writeLines(bib, con = "ref.bib")
+f_pa.na.simp <- sem(m_pa.na.simp, data = d.l, std.lv = TRUE)
+
+f_pa.na.simp %>% summary(standardized = TRUE)# %>% kable(format = "html")
+f_pa.na.simp %>% fitmeasures()
+(modind <- f_pa.na.simp %>% modificationindices())
+
+
+
 ```
-
-
-# Load cache from a latter code chunk
-
-Sometimes we may want to insert an object value early in the document, when the object has not been created. [For example](http://stackoverflow.com/q/18581027/559676), you may want to mention a result in your abstract using an inline R expression, but the result is calculated later in the report.
-
-One solution is to `save()` the workspace in a `.RData` file in the end of the document, and `load()` it in the beginning, e.g.
-
-```{r}
-x = 'NOT YET AVAILABLE'  # an object to be used
-if (file.exists('everything.RData')) load('everything.RData')
-```
-
-In the end of the document, you save the workspace:
-
-```{r eval=FALSE}
-save.image('everything.RData')
-```
-
-Then you can use `` `r x` `` after `everything.RData` is loaded. When it is not available, you will see `x` as ``r x``.
-
-The function `load_cache()` is an alternative solution, which allows you to load the value of an object from a specific code chunk, when the chunk has been cached.
-
-For example, there is no object called `y` that has been created in this document yet, but we can still insert it here: ``r knitr::load_cache('test-a', 'y')``, as long as it will be created in the code chunk with the label `test-a` later.
-
-```{r test-a, cache=TRUE}
-y <- 2*pi
-```
-
-The first time you compile the document, you will see `y` is `NOT AVAILABLE`, but when you compile it for the second time, you will see its value ``r y``.
-
-You do not have to specify the object name in `load_cache()`, in which case the database will just be loaded, and you can use any objects available in the database as if they had been computed by the code chunk later.
-

@@ -52,14 +52,21 @@ items <- list(
                       "trstprt"
                       ),
   
-  political_hope = c("psppsgva",
+  hope_political = c("psppsgva",
                      "actrolga",
                      "psppipla",
                      "cptppola"),
   
-  political_interest = "polintr"
+  interest_political = "polintr"
   
 )
+
+# items_ordered <- items
+# items_ordered$trust_social <- NULL
+# items_ordered$trust_political <- NULL
+items_ordered <- items$hope_political
+
+items_ordered <- items_ordered %>% unlist() %>% as.character()
 
 ## reading, selecting, and saving the abridged data to GitHub
 # data.orig <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESS8e02.1_F1.csv")
@@ -80,8 +87,37 @@ d[,20:23][d[,20:23]>5] <- NA
 # reverse-coding polint
 d$polintr <- (d$polintr-5) %>% abs()
 
-d <- d %>% na.omit()
+# d <- d %>% filter(cntry == "BE") %>%  na.omit()
 
 # making model syntaxes ---------------------------------------------------
 
+m.1 <- "
+
+discrimination <~ 1*dscrrce + dscrntn + dscrrlg +
+                  dscrlng + dscretn + dscrage +
+                  dscrgnd + dscrsex + dscrdsb +
+                  dscroth
+
+# trust =~ trust_social + trust_political
+
+trust_social =~ 1*ppltrst + pplfair + pplhlp
+
+trust_political =~ 1*trstprl + trstlgl + trstplc + trstplt + trstprt
+
+hope_political =~ 1*psppsgva + actrolga + psppipla + cptppola
+
+hope_political + trust_political + discrimination ~ polintr
+
+hope_political + trust_social + trust_political ~ discrimination
+
+
+"
+
+Sys.time()
+f <- lavaan(m.1, d, ordered = items_ordered, std.lv = TRUE)
+Sys.time()
+
+f %>% summary(standardized=TRUE)
+f %>% fitmeasures()
+f %>% modificationindices()
 

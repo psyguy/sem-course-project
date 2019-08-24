@@ -90,6 +90,9 @@ d$polintr <- (d$polintr-5) %>% abs()
 
 dscrscore <- d %>% select(contains("dscr")) %>% rowSums()
 
+ds <- d %>% select(contains("dscr"))
+dspc <- ds %*% princomp(ds,1)$loadings
+
 d <- d %>% cbind(dscrscore)
 
 d <- d %>% filter(cntry == "BE") %>%  na.omit()
@@ -389,6 +392,8 @@ Sys.time()
 f <- lavaan(m.7, d,
             ordered = c(items_ordered, as.character(unlist(items$discrimination))),
             std.lv = TRUE,
+            likelihood = "wishart",
+            estimator = "MLR",
             auto.var=TRUE)
 Sys.time()
 
@@ -437,8 +442,15 @@ semTable(f, file = NULL, paramSets = "all", paramSetLabels,
 
 
 
-testtable("fit1.t1.tex", "C:/Users/r0607671/OneDrive - student.kuleuven.be/Master of Psychology/2. Present/Structural Equation Modeling/sem-course-project")
-fit1.t1 <- semTable(f, columns = c("estse", "p"),
-                    fits = c("chisq", "rmsea"), file = file.path("C:/Users/r0607671/OneDrive - student.kuleuven.be/Master of Psychology/2. Present/Structural Equation Modeling/sem-course-project", "fit1.t1.html"),
-                    varLabels = c("x1" = "hello"), type = "html", print.results = FALSE)
-``
+# testtable("fit1.t1.tex", "C:/Users/r0607671/OneDrive - student.kuleuven.be/Master of Psychology/2. Present/Structural Equation Modeling/sem-course-project")
+
+
+fit1.t1 <- semTable(f,
+                    # file = "semtable.csv",
+                    columns = c("estse"),
+                    fits = c("chisq", "rmsea", "cfi", "srmr"),
+                    #file = file.path("C:/Users/r0607671/OneDrive - student.kuleuven.be/Master of Psychology/2. Present/Structural Equation Modeling/sem-course-project", "fit1.t1.html"),
+                    # varLabels = c("x1" = "hello"),
+                    # type = "html",
+                    print.results = TRUE)
+

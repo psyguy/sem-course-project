@@ -1,0 +1,344 @@
+---
+title: "Dynamic SEM on ESM Data"
+author: "MohammadHossein Manuel Haqiqatkhah - R0607671"
+date: '2019-08-23'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+subtitle: Structural Equation Modeling Course Project - KU Leuven
+bibliography: ref.bib
+---
+
+
+```{r setup, include = FALSE, echo = FALSE}
+# loading stuff -----------------------------------------------------------
+
+list.of.packages <- c("tidyverse",
+                      "plyr",
+                      "qgraph",
+                      "dplyr",
+                      "knitr",
+                      "kableExtra",
+                      "psych",
+                      "semPlot",
+                      "lavaan")
+new.packages <-
+  list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+if (length(new.packages)) {
+  install.packages(new.packages, repos='http://cran.us.r-project.org')
+}
+tmp <- lapply(list.of.packages, require, character.only = TRUE)
+
+rm(list.of.packages, new.packages, tmp)
+# knitr::opts_chunk$set(echo = FALSE)
+
+# rm(list = ls())
+
+
+```
+
+
+```{r, include=TRUE}
+
+# selecting items and reading data ----------------------------------------------
+
+items <- list(
+  discrimination = c("dscrrce",
+                     "dscrntn",
+                     "dscrrlg",
+                     "dscrlng",
+                     "dscretn",
+                     "dscrage",
+                     "dscrgnd",
+                     "dscrsex",
+                     "dscrdsb",
+                     "dscroth"
+                     ),
+  
+  trust_social = c("ppltrst",
+                   "pplfair",
+                   "pplhlp"
+                   ),
+  
+  trust_political = c("trstprl",
+                      "trstlgl",
+                      "trstplc",
+                      "trstplt",
+                      "trstprt"
+                      ),
+  
+  hope_political = c("psppsgva",
+                     "actrolga",
+                     "psppipla",
+                     "cptppola"),
+  
+  interest_political = "polintr"
+  
+)
+
+items_ordered <- items$hope_political %>% unlist() %>% as.character()
+
+data <- read.csv("https://github.com/psyguy/sem-course-project/raw/master/data/ess2016_selected.csv")
+
+# cleaning/recoding the data ----------------------------------------------
+
+d <- data
+# removing invalid/missing data
+d[d>10] <- NA
+d$polintr[d$polintr>4] <- NA
+d[,20:23][d[,20:23]>5] <- NA
+# reverse-coding polint
+d$polintr <- (d$polintr-5) %>% abs()
+
+dscrscore <- d %>% select(contains("dscr")) %>% rowSums()
+
+d <- d %>% cbind(dscrscore)
+
+d <- d %>% filter(cntry == "BE") %>%  na.omit()
+
+# making model syntaxes ---------------------------------------------------
+
+m.5 <- "
+# 1. latent variable definitions
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+  optimism_political =~ NA*psppsgva + actrolga + psppipla + cptppola +
+                        trstprl + trstlgl + trstplc + trstplt + trstprt
+# 2. regressions
+  hope_political + trust_political ~ polintr
+  hope_political + trust_social + trust_political ~ dscrscore
+# 3. (co)variances
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+  # optimism_general ~~ 1*optimism_general
+  optimism_political ~~ 1*optimism_political
+  
+  hope_political ~~ trust_social + trust_political
+  trust_social ~~ trust_political
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+"
+
+# fitting and plotting model ---------------------------------------------------
+
+f <- lavaan(m.5, d,
+            ordered = c(items_ordered, as.character(unlist(items$discrimination))),
+            std.lv = TRUE,
+            auto.var=TRUE)
+
+# f %>% summary(standardized=TRUE)
+
+
+semPaths(f,
+         title = FALSE,
+         curvePivot = TRUE,
+         what = "std",
+         rotation = 2,
+         layout = "tree2",
+         optimizeLatRes = TRUE,
+         intercepts = FALSE,
+         edge.label.cex = 0.95,
+         exoVar=FALSE,
+         sizeMan=5,
+         sizeLat=7,
+         nCharNodes=5,
+         residuals=FALSE,
+         fixedStyle=1,
+         freeStyle=1,
+         curvePivot = FALSE)
+
+```
+
+```{r latin, results="asis", echo=FALSE, include=TRUE}
+s <- f %>% 
+  parameterEstimates(add.attributes = TRUE) 
+# f %>% 
+#   parameterEstimates(add.attributes = TRUE) %>% 
+#   kable(
+#       "latex",
+#       caption = "Latin terms for explanation and explication",
+#       label = "latin",
+#       booktabs = T)
+```
+
+
+```{r, include=TRUE}
+
+
+o <- "
+
+Parameter Estimates:
+
+  Information                                 Expected
+  Information saturated (h1) model        Unstructured
+  Standard Errors                           Robust.sem
+
+Latent Variables:
+                        Estimate  Std.Err  z-value  P(>|z|) ci.lower ci.upper
+  hope_political =~                                                          
+    psppsgva               0.588    0.026   22.591    0.000    0.537    0.639
+    actrolga               0.767    0.024   31.405    0.000    0.719    0.815
+    psppipla               0.660    0.021   31.081    0.000    0.618    0.702
+    cptppola               0.658    0.025   26.822    0.000    0.610    0.706
+  trust_social =~                                                            
+    ppltrst                1.554    0.063   24.822    0.000    1.432    1.677
+    pplfair                1.113    0.048   22.979    0.000    1.018    1.207
+    pplhlp                 1.253    0.057   21.963    0.000    1.141    1.365
+  trust_political =~                                                         
+    trstprl                1.484    0.052   28.337    0.000    1.381    1.586
+    trstlgl                1.480    0.058   25.582    0.000    1.366    1.593
+    trstplc                1.170    0.048   24.126    0.000    1.075    1.265
+    trstplt                1.572    0.053   29.687    0.000    1.468    1.676
+    trstprt                1.507    0.056   27.018    0.000    1.397    1.616
+  optimism_political =~                                                      
+    psppsgva               0.583    0.033   17.557    0.000    0.518    0.648
+    actrolga              -0.472    0.046  -10.354    0.000   -0.561   -0.382
+    psppipla               0.401    0.034   11.728    0.000    0.334    0.468
+    cptppola              -0.403    0.038  -10.588    0.000   -0.478   -0.328
+    trstprl                0.794    0.058   13.674    0.000    0.680    0.907
+    trstlgl                0.652    0.063   10.378    0.000    0.529    0.775
+    trstplc                0.399    0.053    7.507    0.000    0.295    0.503
+    trstplt                0.933    0.059   15.805    0.000    0.817    1.049
+    trstprt                0.921    0.061   15.154    0.000    0.802    1.040
+
+Regressions:
+                       Estimate  Std.Err  z-value  P(>|z|) ci.lower ci.upper
+  hope_political ~                                                          
+    polintr               0.775    0.032   24.093    0.000    0.712    0.838
+  trust_political ~                                                         
+    polintr               0.327    0.031   10.705    0.000    0.267    0.387
+  hope_political ~                                                          
+    dscrrce               0.128    0.210    0.610    0.542   -0.283    0.539
+    dscrntn              -0.599    0.162   -3.710    0.000   -0.916   -0.283
+    dscrrlg              -0.468    0.178   -2.627    0.009   -0.817   -0.119
+    dscrlng               0.079    0.270    0.293    0.769   -0.450    0.608
+    dscretn               0.578    0.420    1.378    0.168   -0.244    1.401
+    dscrage              -0.445    0.525   -0.849    0.396   -1.474    0.583
+    dscrgnd               1.052    0.442    2.379    0.017    0.185    1.918
+    dscrsex               0.281    0.302    0.929    0.353   -0.312    0.874
+    dscrdsb              -0.303    0.402   -0.752    0.452   -1.091    0.486
+    dscroth              -0.061    0.194   -0.314    0.753   -0.441    0.319
+  trust_social ~                                                            
+    dscrrce              -0.331    0.203   -1.635    0.102   -0.729    0.066
+    dscrntn              -0.683    0.169   -4.043    0.000   -1.014   -0.352
+    dscrrlg              -0.434    0.185   -2.347    0.019   -0.797   -0.072
+    dscrlng              -0.198    0.309   -0.640    0.522   -0.803    0.408
+    dscretn              -0.061    0.371   -0.164    0.870   -0.788    0.666
+    dscrage              -0.601    0.350   -1.718    0.086   -1.287    0.085
+    dscrgnd               0.557    0.419    1.327    0.184   -0.265    1.379
+    dscrsex               0.131    0.329    0.398    0.691   -0.514    0.776
+    dscrdsb              -0.336    0.432   -0.778    0.437   -1.182    0.510
+    dscroth              -0.285    0.197   -1.446    0.148   -0.672    0.101
+  trust_political ~                                                         
+    dscrrce               0.417    0.199    2.097    0.036    0.027    0.806
+    dscrntn               0.458    0.161    2.850    0.004    0.143    0.773
+    dscrrlg              -0.521    0.160   -3.263    0.001   -0.834   -0.208
+    dscrlng               0.634    0.235    2.697    0.007    0.173    1.094
+    dscretn              -0.600    0.300   -2.000    0.045   -1.187   -0.012
+    dscrage              -0.786    0.393   -2.001    0.045   -1.556   -0.016
+    dscrgnd               0.491    0.386    1.271    0.204   -0.266    1.247
+    dscrsex              -0.423    0.244   -1.735    0.083   -0.900    0.055
+    dscrdsb              -0.602    0.472   -1.275    0.202   -1.528    0.324
+    dscroth              -0.263    0.194   -1.355    0.175   -0.643    0.117
+  optimism_political ~                                                      
+    dscrrce              -0.183    0.212   -0.864    0.387   -0.599    0.232
+    dscrntn              -0.601    0.198   -3.040    0.002   -0.988   -0.213
+    dscrrlg               0.195    0.186    1.045    0.296   -0.170    0.560
+    dscrlng              -0.721    0.269   -2.682    0.007   -1.247   -0.194
+    dscretn              -0.415    0.308   -1.346    0.178   -1.019    0.189
+    dscrage              -0.236    0.610   -0.386    0.700   -1.432    0.961
+    dscrgnd              -0.880    0.354   -2.489    0.013   -1.574   -0.187
+    dscrsex              -0.338    0.422   -0.803    0.422   -1.165    0.488
+    dscrdsb              -0.147    0.383   -0.384    0.701   -0.897    0.603
+    dscroth              -0.637    0.237   -2.686    0.007   -1.102   -0.172
+
+Covariances:
+                    Estimate  Std.Err  z-value  P(>|z|) ci.lower ci.upper
+ .hope_political ~~                                                      
+   .trust_social       0.259    0.030    8.676    0.000    0.201    0.318
+   .trust_politicl     0.387    0.031   12.361    0.000    0.325    0.448
+ .trust_social ~~                                                        
+   .trust_politicl     0.546    0.027   20.383    0.000    0.493    0.598
+
+Intercepts:
+                   Estimate  Std.Err  z-value  P(>|z|) ci.lower ci.upper
+   .psppsgva          0.000    0.077    0.000    1.000   -0.152    0.152
+   .actrolga          0.000    0.080    0.000    1.000   -0.156    0.156
+   .psppipla          0.000    0.077    0.000    1.000   -0.150    0.150
+   .cptppola          0.000    0.077    0.000    1.000   -0.151    0.151
+   .ppltrst           4.258    0.138   30.845    0.000    3.987    4.528
+   .pplfair           5.247    0.124   42.467    0.000    5.005    5.489
+   .pplhlp            4.216    0.133   31.671    0.000    3.955    4.477
+   .trstprl           3.430    0.135   25.312    0.000    3.164    3.695
+   .trstlgl           4.396    0.148   29.637    0.000    4.105    4.687
+   .trstplc           5.683    0.132   42.943    0.000    5.423    5.942
+   .trstplt           2.842    0.137   20.813    0.000    2.574    3.110
+   .trstprt           2.866    0.136   21.021    0.000    2.599    3.133
+   .hope_political    0.000                               0.000    0.000
+   .trust_social      0.000                               0.000    0.000
+   .trust_politicl    0.000                               0.000    0.000
+   .optimism_pltcl    0.000                               0.000    0.000
+
+Thresholds:
+                   Estimate  Std.Err  z-value  P(>|z|) ci.lower ci.upper
+    psppsgva|t1       0.171                               0.171    0.171
+    psppsgva|t2       1.253                               1.253    1.253
+    psppsgva|t3       2.622                               2.622    2.622
+    psppsgva|t4       3.366                               3.366    3.366
+    actrolga|t1       1.287                               1.287    1.287
+    actrolga|t2       2.317                               2.317    2.317
+    actrolga|t3       3.473                               3.473    3.473
+    actrolga|t4       4.253                               4.253    4.253
+    psppipla|t1       0.345                               0.345    0.345
+    psppipla|t2       1.549                               1.549    1.549
+    psppipla|t3       2.735                               2.735    2.735
+    psppipla|t4       4.198                               4.198    4.198
+    cptppola|t1       1.017                               1.017    1.017
+    cptppola|t2       2.017                               2.017    2.017
+    cptppola|t3       3.148                               3.148    3.148
+    cptppola|t4       4.052                               4.052    4.052
+
+Variances:
+                   Estimate  Std.Err  z-value  P(>|z|) ci.lower ci.upper
+   .hope_political    1.000                               1.000    1.000
+   .trust_social      1.000                               1.000    1.000
+   .trust_politicl    1.000                               1.000    1.000
+   .optimism_pltcl    1.000                               1.000    1.000
+   .psppsgva          0.314                               0.314    0.314
+   .actrolga          0.189                               0.189    0.189
+   .psppipla          0.404                               0.404    0.404
+   .cptppola          0.405                               0.405    0.405
+   .ppltrst           1.964    0.135   14.544    0.000    1.699    2.229
+   .pplfair           2.106    0.093   22.547    0.000    1.923    2.290
+   .pplhlp            2.361    0.111   21.204    0.000    2.142    2.579
+   .trstprl           1.765    0.066   26.689    0.000    1.635    1.894
+   .trstlgl           2.481    0.097   25.687    0.000    2.292    2.670
+   .trstplc           2.472    0.087   28.298    0.000    2.301    2.643
+   .trstplt           1.158    0.066   17.524    0.000    1.028    1.287
+   .trstprt           1.350    0.071   19.120    0.000    1.212    1.488
+
+Scales y*:
+                   Estimate  Std.Err  z-value  P(>|z|) ci.lower ci.upper
+    psppsgva          1.000                               1.000    1.000
+    actrolga          1.000                               1.000    1.000
+    psppipla          1.000                               1.000    1.000
+    cptppola          1.000                               1.000    1.000
+
+"
+# o %>% print()
+o %>% cat()
+# semTable(f,
+#          columns = c("estse", "p"),
+#          fits = c("chisq", "rmsea"),
+#          file = file.path(tempdir, "fit1.t1.html"),
+#          # varLabels = c("x1" = "hello"),
+#          type = "html",
+#          print.results = TRUE)
+
+```

@@ -219,15 +219,160 @@ m.4 <- "
 
 "
 
+m.5 <- "
+
+# 1. latent variable definitions
+
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+  # optimism_general =~ NA*trust_social + trust_political + hope_political
+  optimism_political =~ NA*psppsgva + actrolga + psppipla + cptppola +
+                        trstprl + trstlgl + trstplc + trstplt + trstprt
+
+# 2. regressions
+
+  hope_political + trust_political ~ polintr
+  hope_political + trust_social + trust_political ~ dscrscore
+
+# 3. (co)variances
+
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+  # optimism_general ~~ 1*optimism_general
+  optimism_political ~~ 1*optimism_political
+  
+  hope_political ~~ trust_social + trust_political
+  trust_social ~~ trust_political
+
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+
+# 5. thresholds
+  
+ # psppsgva + actrolga + psppipla + cptppola | t1 + t2 + t3 + t4
+
+"
+
+m.55 <- "
+
+# 1. latent variable definitions
+
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+  optimism_general =~ NA*trust_social + trust_political + hope_political
+  optimism_political =~ NA*psppsgva + actrolga + psppipla + cptppola +
+                        trstprl + trstlgl + trstplc + trstplt + trstprt
+
+# 2. regressions
+
+  hope_political + trust_political ~ polintr
+  hope_political + trust_social + trust_political ~ dscrscore
+
+# 3. (co)variances
+
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+  optimism_general ~~ 1*optimism_general
+  optimism_political ~~ 1*optimism_political
+  
+  hope_political ~~ trust_social + trust_political
+  trust_social ~~ trust_political
+
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+
+# 5. thresholds
+  
+ # psppsgva + actrolga + psppipla + cptppola | t1 + t2 + t3 + t4
+
+"
+
+m.6 <- "
+
+# 1. latent variable definitions
+
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+  # optimism_general =~ NA*trust_social + trust_political + hope_political
+  optimism_political =~ NA*psppsgva + actrolga + psppipla + cptppola +
+                        trstprl + trstlgl + trstplc + trstplt + trstprt
+                        
+  
+  discrimination <~ NA*dscrrce + dscrntn + dscrrlg +
+                    dscrlng + dscretn + dscrage +
+                    dscrgnd + dscrsex + dscrdsb +
+                    dscroth
+
+# 2. regressions
+
+  hope_political + trust_political ~ polintr
+  hope_political + trust_social + trust_political ~ discrimination
+
+# 3. (co)variances
+
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+  # optimism_general ~~ 1*optimism_general
+  optimism_political ~~ 1*optimism_political
+  discrimination ~~ 1*discrimination
+  
+  hope_political ~~ trust_social + trust_political
+  trust_social ~~ trust_political
+
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+
+# 5. thresholds
+  
+ # psppsgva + actrolga + psppipla + cptppola | t1 + t2 + t3 + t4
+
+"
+
 
 Sys.time()
-f <- lavaan(m.4, d,
-            ordered = items_ordered,
+f <- lavaan(m.5, d,
+            ordered = c(items_ordered, as.character(unlist(items$discrimination))),
             std.lv = TRUE,
             auto.var=TRUE)
 Sys.time()
 
 f %>% summary(standardized=TRUE)
-f %>% fitmeasures()
+(fm <- f %>% fitmeasures())
 f %>% modificationindices()
+
+
+semPaths(f,
+         title = FALSE,
+         curvePivot = TRUE,
+         what = "std",
+         rotation = 2,
+         # style = "mx",
+         layout = "tree2",
+         optimizeLatRes = TRUE,
+         intercepts = FALSE,
+         edge.label.cex = 0.95,
+         exoVar=FALSE,
+         sizeMan=5,
+         sizeLat=7,
+         nCharNodes=5,
+         residuals=FALSE,
+         fixedStyle=1,
+         freeStyle=1,
+         # mar = c(1, 1, 1, 1),
+         curvePivot = FALSE)
 

@@ -10,6 +10,7 @@ list.of.packages <- c("tidyverse",
                       "knitr",
                       "kableExtra",
                       "psych",
+                      "kutils",
                       "semPlot",
                       "lavaan")
 new.packages <-
@@ -357,7 +358,8 @@ m.7 <- "
 # 2. regressions
 
   hope_political + trust_political ~ polintr
-  hope_political + trust_social + trust_political + optimism_political ~ dscrscore
+  hope_political + trust_social + trust_political + optimism_political ~ dscrrce + dscrntn + dscrrlg + dscrlng + dscretn + dscrage + dscrgnd + dscrsex + dscrdsb + dscroth
+  
 
 # 3. (co)variances
 
@@ -395,6 +397,9 @@ f %>% summary(standardized=TRUE)
 f %>% modificationindices()
 
 
+# plot and table ----------------------------------------------------------
+
+
 semPaths(f,
          title = FALSE,
          curvePivot = TRUE,
@@ -404,7 +409,7 @@ semPaths(f,
          layout = "tree2",
          optimizeLatRes = TRUE,
          intercepts = FALSE,
-         edge.label.cex = 0.95,
+         edge.label.cex = 0.01,
          exoVar=FALSE,
          sizeMan=5,
          sizeLat=7,
@@ -412,7 +417,28 @@ semPaths(f,
          residuals=FALSE,
          fixedStyle=1,
          freeStyle=1,
-         style = "lisrel",
+         # filetype = "pdf", # Store to PDF
+         # filename = "x", # Set the name of the file
          # mar = c(1, 1, 1, 1),
          curvePivot = FALSE)
 
+
+
+semTable(f)
+
+
+semTable(f, file = NULL, paramSets = "all", paramSetLabels,
+         columns = c(est = "Estimate", se = "SE", z = "z", p = "p"),
+         columnLabels, fits = c("chisq", "cfi", "tli", "rmsea"),
+         fitLabels = toupper(fits), varLabels = NULL, groups = NULL,
+         type = "latex", table.float = FALSE, caption = NULL,
+         label = NULL, longtable = FALSE, print.results = TRUE,
+         centering = "siunitx", alpha = c(0.05, 0.01, 0.001))
+
+
+
+testtable("fit1.t1.tex", "C:/Users/r0607671/OneDrive - student.kuleuven.be/Master of Psychology/2. Present/Structural Equation Modeling/sem-course-project")
+fit1.t1 <- semTable(f, columns = c("estse", "p"),
+                    fits = c("chisq", "rmsea"), file = file.path("C:/Users/r0607671/OneDrive - student.kuleuven.be/Master of Psychology/2. Present/Structural Equation Modeling/sem-course-project", "fit1.t1.html"),
+                    varLabels = c("x1" = "hello"), type = "html", print.results = FALSE)
+``

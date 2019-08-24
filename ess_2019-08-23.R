@@ -72,7 +72,15 @@ data <- read.csv("https://github.com/psyguy/sem-course-project/raw/master/data/e
 
 # cleaning/recoding the data ----------------------------------------------
 
-d <- data[rowSums(data[,2:24]>11),]
+d <- data
+# removing invalid/missing data
+d[d>10] <- NA
+d$polintr[d$polintr>4] <- NA
+d[,20:23][d[,20:23]>5] <- NA
+# reverse-coding polint
+d$polintr <- (d$polintr-5) %>% abs()
+
+d <- d %>% na.omit()
 
 # making model syntaxes ---------------------------------------------------
 

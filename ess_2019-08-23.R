@@ -87,34 +87,144 @@ d[,20:23][d[,20:23]>5] <- NA
 # reverse-coding polint
 d$polintr <- (d$polintr-5) %>% abs()
 
-# d <- d %>% filter(cntry == "BE") %>%  na.omit()
+dscrscore <- d %>% select(contains("dscr")) %>% rowSums()
+
+d <- d %>% cbind(dscrscore)
+
+d <- d %>% filter(cntry == "BE") %>%  na.omit()
 
 # making model syntaxes ---------------------------------------------------
 
 m.1 <- "
 
-discrimination <~ 1*dscrrce + dscrntn + dscrrlg +
+discrimination <~ dscrrce + dscrntn + dscrrlg +
                   dscrlng + dscretn + dscrage +
                   dscrgnd + dscrsex + dscrdsb +
                   dscroth
 
 # trust =~ trust_social + trust_political
 
-trust_social =~ 1*ppltrst + pplfair + pplhlp
+trust_social =~ ppltrst + pplfair + pplhlp
 
-trust_political =~ 1*trstprl + trstlgl + trstplc + trstplt + trstprt
+trust_political =~ trstprl + trstlgl + trstplc + trstplt + trstprt
 
-hope_political =~ 1*psppsgva + actrolga + psppipla + cptppola
+hope_political =~ psppsgva + actrolga + psppipla + cptppola
 
-hope_political + trust_political + discrimination ~ polintr
+hope_political ~ polintr
 
 hope_political + trust_social + trust_political ~ discrimination
 
+# discrimination ~~ 1*discrimination
+# hope_political ~~ 1*hope_political
+# trust_social ~~ 1*trust_social
+# trust_political ~~ 1*trust_political
 
 "
 
+
+m.2 <- "
+
+# trust =~ trust_social + trust_political
+
+trust_social =~ NA*ppltrst + pplfair + pplhlp
+
+trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+
+trust_social ~~ trust_political
+
+hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+
+hope_political ~ polintr
+
+hope_political + trust_social + trust_political ~ dscrscore
+
+# discrimination ~~ discrimination
+hope_political ~~ 1*hope_political
+trust_social ~~ 1*trust_social
+trust_political ~~ 1*trust_political
+
+"
+
+m.3 <- "
+
+# 1. latent variable definitions
+
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+  # trust =~ trust_social + trust_political
+
+# 2. regressions
+
+  hope_political + trust_political ~ polintr
+  hope_political + trust_social + trust_political ~ dscrscore
+
+# 3. (co)variances
+
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+  
+  hope_political ~~ trust_social + trust_political
+  trust_social ~~ trust_political
+
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+
+# 5. thresholds
+  
+ # psppsgva + actrolga + psppipla + cptppola | t1 + t2 + t3 + t4
+
+"
+
+m.4 <- "
+
+# 1. latent variable definitions
+
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+  optimism_general =~ NA*trust_social + trust_political + hope_political
+  optimism_political =~ NA*psppsgva + actrolga + psppipla + cptppola +
+                        trstprl + trstlgl + trstplc + trstplt + trstprt
+
+# 2. regressions
+
+  hope_political + trust_political ~ polintr
+  hope_political + trust_social + trust_political ~ dscrscore
+
+# 3. (co)variances
+
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+  optimism_general ~~ 1*optimism_general
+  optimism_political ~~ 1*optimism_political
+  
+  # hope_political ~~ trust_social + trust_political
+  # trust_social ~~ trust_political
+
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+
+# 5. thresholds
+  
+ # psppsgva + actrolga + psppipla + cptppola | t1 + t2 + t3 + t4
+
+"
+
+
 Sys.time()
-f <- lavaan(m.1, d, ordered = items_ordered, std.lv = TRUE)
+f <- lavaan(m.4, d,
+            ordered = items_ordered,
+            std.lv = TRUE,
+            auto.var=TRUE)
 Sys.time()
 
 f %>% summary(standardized=TRUE)

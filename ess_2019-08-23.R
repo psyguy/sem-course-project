@@ -91,9 +91,9 @@ d$polintr <- (d$polintr-5) %>% abs()
 dscrscore <- d %>% select(contains("dscr")) %>% rowSums()
 
 ds <- d %>% select(contains("dscr"))
-dspc <- ds %*% princomp(ds,1)$loadings
+dspc <- (princomp(ds,1)$scores)[,1]
 
-d <- d %>% cbind(dscrscore)
+d <- d %>% cbind(dscrscore, dspc)
 
 d <- d %>% filter(cntry == "BE") %>%  na.omit()
 
@@ -388,12 +388,52 @@ m.7 <- "
 "
 
 
+m.8 <- "
+
+# 1. latent variable definitions
+
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+  # optimism_general =~ NA*trust_social + trust_political + hope_political
+  optimism_political =~ NA*psppsgva + actrolga + psppipla + cptppola +
+                        trstprl + trstlgl + trstplc + trstplt + trstprt
+
+# 2. regressions
+
+  hope_political + trust_political ~ polintr
+  hope_political + trust_social + trust_political ~ dspc
+
+# 3. (co)variances
+
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+  # optimism_general ~~ 1*optimism_general
+  optimism_political ~~ 1*optimism_political
+  
+  hope_political ~~ trust_social + trust_political
+  trust_social ~~ trust_political
+
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+
+# 5. thresholds
+  
+ # psppsgva + actrolga + psppipla + cptppola | t1 + t2 + t3 + t4
+
+"
+
+
 Sys.time()
-f <- lavaan(m.7, d,
+f <- lavaan(m.5, d,
             ordered = c(items_ordered, as.character(unlist(items$discrimination))),
             std.lv = TRUE,
-            likelihood = "wishart",
-            estimator = "MLR",
+            # likelihood = "wishart",
+            # estimator = "MLR",
             auto.var=TRUE)
 Sys.time()
 
@@ -429,7 +469,7 @@ semPaths(f,
 
 
 
-semTable(f)
+ semTable(f)
 
 
 semTable(f, file = NULL, paramSets = "all", paramSetLabels,

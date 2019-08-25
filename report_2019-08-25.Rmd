@@ -1,0 +1,181 @@
+---
+title: "Discrimination, Trust, and Hope in Political Change in Europe 2016"
+subtitle: "Structural Equation Modeling Course Project - KU Leuven"
+author: "MohammadHossein Manuel Haqiqatkhah - R0607671"
+date: "August 2019"
+bibliography: ref.bib
+output: pdf_document
+---
+
+
+```{r setup, include = FALSE, echo = FALSE}
+list.of.packages <- c("tidyverse",
+                      "plyr",
+                      "qgraph",
+                      "dplyr",
+                      "knitr",
+                      "kableExtra",
+                      "psych",
+                      "kutils",
+                      "semPlot",
+                      "lavaan")
+new.packages <-
+  list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+if (length(new.packages)) {
+  install.packages(new.packages, repos='http://cran.us.r-project.org')
+}
+tmp <- lapply(list.of.packages, require, character.only = TRUE)
+
+rm(list.of.packages, new.packages, tmp)
+
+knitr::opts_chunk$set(echo = FALSE)
+# rm(list = ls())
+
+```
+
+
+```{r handy-functions}
+
+pagebreak <- function(){
+  if(knitr::is_latex_output())
+    return("\\newpage")
+  else
+    return('<div style="page-break-before: always;" />')
+}
+
+
+l_o <- function(m, d = d){
+  
+  f <- lavaan(m,
+              d,
+              ordered = c(items_ordered, as.character(unlist(items$discrimination))),
+            std.lv = TRUE,
+            # likelihood = "wishart",
+            # estimator = "MLR",
+            auto.var=TRUE)
+  
+  
+  
+  
+}
+
+
+```
+
+
+```{r data}
+
+# selecting items and reading data ----------------------------------------------
+
+items <- list(
+  discrimination = c("dscrrce",
+                     "dscrntn",
+                     "dscrrlg",
+                     "dscrlng",
+                     "dscretn",
+                     "dscrage",
+                     "dscrgnd",
+                     "dscrsex",
+                     "dscrdsb",
+                     "dscroth"
+                     ),
+  
+  trust_social = c("ppltrst",
+                   "pplfair",
+                   "pplhlp"
+                   ),
+  
+  trust_political = c("trstprl",
+                      "trstlgl",
+                      "trstplc",
+                      "trstplt",
+                      "trstprt"
+                      ),
+  
+  hope_political = c("psppsgva",
+                     "actrolga",
+                     "psppipla",
+                     "cptppola"),
+  
+  interest_political = "polintr"
+  
+)
+
+# items_ordered <- items
+# items_ordered$trust_social <- NULL
+# items_ordered$trust_political <- NULL
+items_ordered <- items$hope_political
+items_ordered <- items_ordered %>% unlist() %>% as.character()
+
+## reading, selecting, and saving the abridged data to GitHub
+# data.orig <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESS8e02.1_F1.csv")
+# data.orig <- read.csv("data/ESS8e02.1_F1.csv")
+# d <- data.orig %>% select(cntry, as.character(unlist(items)))
+# d %>% write.csv("data/ess2016_selected.csv", row.names = FALSE)
+
+data <- read.csv("https://github.com/psyguy/sem-course-project/raw/master/data/ess2016_selected.csv")
+
+
+# cleaning/recoding the data ----------------------------------------------
+
+d <- data
+# removing invalid/missing data
+d[d>10] <- NA
+d$polintr[d$polintr>4] <- NA
+d[,20:23][d[,20:23]>5] <- NA
+# reverse-coding polint
+d$polintr <- (d$polintr-5) %>% abs()
+
+dscrscore <- d %>% select(contains("dscr")) %>% rowSums()
+
+ds <- d %>% select(contains("dscr"))
+dspc <- (princomp(ds,1)$scores)[,1]
+
+d <- d %>% cbind(dscrscore, dspc) %>%  na.omit()
+
+d <- d %>% filter(cntry == "BE")
+
+```
+
+
+# Introduction
+
+Democracy literally means "rule by the people," and hence it heavily relies on the citizens---what is to a government which lacks *rulers*?
+In democratic societies, citizens participate in their government by delegating their power to their representatives, i.e., politicians. However, not all delegates deserve trust, and not all people find other members of society---normal or powerful---trustworthy.
+
+On the other hand, the *ruler* (i.e., the citizens) should see a positive outlook of their ruling---that it is effective and can, hopefully, make a difference.
+
+Among the myriad of factors involved in trust in others (including politicians) and hope in the efficacy of citizens' participation in democracy, perception of discrimination might play a key role. If members of a society feel being discriminated against, they might tend to trust others (and their politicians) less, and see a less bright future in the horizon.
+
+This study, based on the 8th round of the European Social Survey (ESS) data [-@noauthor_european_2017], investigates whether constructs of trust, hope in political change, and perception of discrimination are related to each other---and how.
+
+# Research Hypothesis
+
+Is there a link between the perception of discrimination and trust in others and hope in the effectiveness of participation in politics?
+
+
+# Material
+
+The original dataset included responses from 23 European countries participating in @noauthor_european_2017. The items of the ESS questionnaire relevant to the research question (i.e., trust in others and politicians; perception of discrimination; and hope for a positive outcome of participation in politics) were extracted. The items and their descriptions are shown in Table 1. The invalid responses (missing, refused to answer, and "don't know") were excluded from the dataset.
+
+The items about discrimination were binary, including various forms of discrimination that people can experience. These items include `dscrrce`, `dscrntn`, `dscrrlg`, `dscrlng`, `dscretn`, `dscrage`, `dscrgnd`, `dscrsex`, `dscrdsb`, and `dscroth`. To summarize these items, another item (i.e., `dscrscore`) was added to the dataset which was defined as some of the responses on the indicators of discrimination. Hence, experiencing multiple forms of discrimination increases the total score on the perception of discrimination.
+
+The items regarding trust belonged to two categories: trust in people in general (social trust, including ` ppltrst`, `pplfair`, and `pplhlp`) and trust in politicians or political institutions (political trust, including ` trstprl`, `trstlgl`, `trstplc`, `trstplt`, and `trstprt`). These items were discrete with 11 levels (0-10), hence treated as continuous. The items concerning political trust in the European Union and the United Nations were excluded, as they could be directly affected by responders' nationality and their perception of the role their country plays in (and how it is treated by) the EU and the UN.
+
+The items about hope in politics (i.e., ` psppsgva`, `actrolga`, `psppipla`, and `cptppola`) were recorded as qualitative responses in 5-level Likert scales (e.g., *Not at all*, *A little able*, *Quite able*, *Very able*, and *Completely able*), hence treated as ordered responses. 
+
+Since the attitudes towards politics and politicians depend on whether the responder is interested in politics or not, the item indicating interest in politics (i.e., `polint`) was also added. `polint` was on a 4-level Likert scale and reverse-coded (1 to 4, for "Very interested" to "Not at all interested"). Hence, the coding was reversed in this study.
+
+# Modeling Strategy
+
+Perception of discrimination seems to be a latent formative construct; the various forms of discriminations one experiences *add up* to form that experience. Hence, at a first attempt, a latent variable of `discrimination` was included as a formative factor. However, due to sparsity of the responses on discrimination items, they reduced model fit while adding to model complexity. Hence, this formative factor was excluded from further modeling and two alternatives (using all discrimination items, and the sum score of the items) were used as exogenous variables.
+
+Since the social and political trust could be caused by distinct constructs, they were modeled by two latent variables: `trst_soc` and `trst_pol`, respectively. However, since they both share an element of "trust," these factors were allowed to correlate.
+
+The interest in politics (i.e., `polint`) was used as an exogenous variable, upon which the latent variables can be regressed.
+
+The initial model 
+
+
+# References
+

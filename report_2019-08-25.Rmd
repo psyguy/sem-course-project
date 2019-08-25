@@ -48,17 +48,66 @@ l_o <- function(m, d = d){
   
   f <- lavaan(m,
               d,
-              ordered = c(items_ordered, as.character(unlist(items$discrimination))),
-            std.lv = TRUE,
-            # likelihood = "wishart",
-            # estimator = "MLR",
-            auto.var=TRUE)
+              ordered = c("psppsgva",
+                     "actrolga",
+                     "psppipla",
+                     "cptppola"),
+              std.lv = TRUE,
+              auto.var=TRUE)
+  
+  s <- f %>% parameterEstimates(add.attributes = TRUE)
+  colnames(s)[1:3] <- c("Of", "op", "on")
+  fm <- f %>% fitmeasures()
+
+  
+  o <- list(f = f,
+            s = s,
+            l = s %>% filter(op == "=~") %>% select(-op, -exo),
+            vcv = s %>% filter(op == "~~") %>% select(-op, -exo),
+            r = s %>% filter(op == "~") %>% select(-op, -exo),
+            inc = s %>% filter(op == "~1", est != 0) %>% select(-op, -exo),
+            thr = s %>% filter(op == "|") %>% select(-op, -exo),
+            ch = round(fm["chisq"],2),
+            df = round(fm["df"],2),
+            p = round(fm["df"],4),
+            cfi = round(fm["cfi"],4),
+            rmsea = round(fm["rmsea"],4),
+            srmr = round(fm["srmr"],4),
+            tli = round(fm["tli.scaled"],4)
+            )
   
   
-  
-  
+  o %>% return()
 }
 
+p <- function(f){
+
+semPaths(f,
+         title = FALSE,
+         curvePivot = T,
+         what = "std",
+         rotation = 4,
+         # edge.color = "black",
+         # style = "mx",
+         layout = "tree3",
+         optimizeLatRes = TRUE,
+         intercepts = FALSE,
+         edge.label.cex = 0.001,
+         exoVar=FALSE,
+         sizeMan = 5,
+         # centerLevels = FALSE,
+         sizeLat=10,
+         nCharNodes=15,
+         # groups = "latents",
+         # fixedStyle=1,
+         # freeStyle=1,
+         # filetype = "pdf", # Store to PDF
+         # filename = "x", # Set the name of the file
+         # mar = c(1, 1, 1, 1),
+         residuals=FALSE
+         )
+
+}
 
 ```
 
@@ -104,8 +153,8 @@ items <- list(
 # items_ordered <- items
 # items_ordered$trust_social <- NULL
 # items_ordered$trust_political <- NULL
-items_ordered <- items$hope_political
-items_ordered <- items_ordered %>% unlist() %>% as.character()
+# items_ordered <- items$hope_political
+# items_ordered <- items_ordered %>% unlist() %>% as.character()
 
 ## reading, selecting, and saving the abridged data to GitHub
 # data.orig <- read.csv("https://raw.githubusercontent.com/psyguy/sem-course-project/master/data/ESS8e02.1_F1.csv")
@@ -170,12 +219,120 @@ Since the attitudes towards politics and politicians depend on whether the respo
 
 Perception of discrimination seems to be a latent formative construct; the various forms of discriminations one experiences *add up* to form that experience. Hence, at a first attempt, a latent variable of `discrimination` was included as a formative factor. However, due to sparsity of the responses on discrimination items, they reduced model fit while adding to model complexity. Hence, this formative factor was excluded from further modeling and two alternatives (using all discrimination items, and the sum score of the items) were used as exogenous variables.
 
-Since the social and political trust could be caused by distinct constructs, they were modeled by two latent variables: `trst_soc` and `trst_pol`, respectively. However, since they both share an element of "trust," these factors were allowed to correlate.
+Since the social and political trust could be caused by distinct constructs, they were modeled by two latent variables: `SocTrst` and `PolTrst`, respectively. However, since they both share an element of "trust," these factors were allowed to correlate.
 
-The interest in politics (i.e., `polint`) was used as an exogenous variable, upon which the latent variables can be regressed.
+The latent variable `PolHope` was also included and the items regarding hope in efficacy of political actions loaded on it.
 
-The initial model 
+The interest in politics (i.e., `polint`) was used as an exogenous variable, upon which the latent variables can be regressed. Because of the non-normality of the responses, the intercept of items were included in the models (not shownin the outputs).
 
+All latent variances were fixed to one. The SEM analysis was done using R package `lavaan` [@rosseel_lavaan_2012], and the models were visualized using package `semPlot` [@epskamp_semplot_2015].
+
+## Model 1
+
+```{r}
+m1 <- "
+
+# 1. latent variable definitions
+
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+
+# 2. regressions
+
+  hope_political + trust_social + trust_political ~ dscrscore + polintr
+
+# 3. (co)variances
+
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+
+  hope_political ~~ trust_social + trust_political
+  trust_social ~~ trust_political
+
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+
+"
+
+o1 <- l_o(m1, d)
+
+```
+
+
+The initial model had three latent variables, viz., `SocTrst`, `PolTrst`, and `PolHope` and the covariances were also included in the model. The model fit is shown in Figure X. However, the model did not fit well: $\chi^2 =$ `r o1$ch`, $df =$ `r o1$df`, and most importantly, $RMSEA =$ `r o1$rmsea`, $CFI =$ `r o1$cfi`, $SRMR =$ `r o1$srmr`, and $TLI =$ `r o1$tli`.
+
+## Model 2
+
+```{r}
+m2 <- "
+
+# 1. latent variable definitions
+
+  hope_political =~ NA*psppsgva + actrolga + psppipla + cptppola
+  trust_social =~ NA*ppltrst + pplfair + pplhlp
+  trust_political =~ NA*trstprl + trstlgl + trstplc + trstplt + trstprt
+  optimism_political =~ NA*psppsgva + actrolga + psppipla + cptppola +
+                        trstprl + trstlgl + trstplc + trstplt + trstprt
+
+# 2. regressions
+
+  hope_political + trust_social + trust_political + optimism_political ~ dscrscore + polintr
+
+# 3. (co)variances
+
+  hope_political ~~ 1*hope_political
+  trust_social ~~ 1*trust_social
+  trust_political ~~ 1*trust_political
+  optimism_political ~~ 1*optimism_political
+  
+  hope_political ~~ trust_social + trust_political
+  trust_social ~~ trust_political
+
+# 4. intercepts
+  
+  psppsgva + actrolga + psppipla + cptppola ~ 1
+  ppltrst + pplfair + pplhlp ~ 1
+  trstprl + trstlgl + trstplc + trstplt + trstprt ~ 1
+
+"
+
+o2 <- l_o(m2, d)
+
+```
+
+
+The modification indices of Model 1 suggested that all the items of political trust and political be allowed to covary. This (together sith poor fit of Model 1) was an indication that those items can load on another factor. Hence, a forth factor was added to explain the remaining covariance of these items. Based on the loadings, it was called *Political Optimism* (coded as `PolOptm), that models a general the positive attitude towards politics.
+
+This model had a decent fit ($\chi^2 =$ `r o2$ch`, $df =$ `r o2$df`, $RMSEA =$ `r o2$rmsea`, $CFI =$ `r o2$cfi`, $SRMR =$ `r o2$srmr`, and $TLI =$ `r o2$tli`.)
+
+
+```{r tbl, results="asis", echo=FALSE, include=TRUE}
+
+kable(o1$l,
+      "latex",
+      caption = "Loadings o model 1",
+      label = "l",
+      booktabs = T,
+      digits = 2)
+```
+
+
+```{r tbl1, results="asis", echo=FALSE, include=TRUE}
+
+kable(o1$s %>% filter(est != 0),
+      "latex",
+      caption = "Loadings o model 1",
+      label = "l",
+      booktabs = T,
+      digits = 2) %>% 
+  kable_styling(latex_options="scale_down")
+```
 
 # References
 
+`r p(o1$f)`

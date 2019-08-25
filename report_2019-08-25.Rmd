@@ -28,7 +28,7 @@ tmp <- lapply(list.of.packages, require, character.only = TRUE)
 
 rm(list.of.packages, new.packages, tmp)
 
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 # rm(list = ls())
 
 ```
@@ -55,25 +55,27 @@ l_o <- function(m, d = d){
               std.lv = TRUE,
               auto.var=TRUE)
   
-  s <- f %>% parameterEstimates(add.attributes = TRUE)
-  colnames(s)[1:3] <- c("Of", "op", "on")
+  s <- f %>%
+    parameterEstimates(add.attributes = TRUE) %>%
+    filter(est != 0)
+  # colnames(s)[1:3] <- c("Of", "op", "on")
   fm <- f %>% fitmeasures()
 
   
   o <- list(f = f,
             s = s,
-            l = s %>% filter(op == "=~") %>% select(-op, -exo),
-            vcv = s %>% filter(op == "~~") %>% select(-op, -exo),
-            r = s %>% filter(op == "~") %>% select(-op, -exo),
-            inc = s %>% filter(op == "~1", est != 0) %>% select(-op, -exo),
-            thr = s %>% filter(op == "|") %>% select(-op, -exo),
+            l = s %>% filter(op == "=~") %>% select(-exo),
+            vcv = s %>% filter(op == "~~") %>% select(-exo),
+            r = s %>% filter(op == "~") %>% select(-exo),
+            inc = s %>% filter(op == "~1", est != 0) %>% select(-exo),
+            thr = s %>% filter(op == "|") %>% select(-exo),
             ch = round(fm["chisq"],2),
-            df = round(fm["df"],2),
-            p = round(fm["df"],4),
-            cfi = round(fm["cfi"],4),
-            rmsea = round(fm["rmsea"],4),
-            srmr = round(fm["srmr"],4),
-            tli = round(fm["tli.scaled"],4)
+            df = round(fm["df"],0),
+            p = round(fm["df"],3),
+            cfi = round(fm["cfi"],3),
+            rmsea = round(fm["rmsea"],3),
+            srmr = round(fm["srmr"],3),
+            tli = round(fm["tli.scaled"],3)
             )
   
   
@@ -264,7 +266,14 @@ o1 <- l_o(m1, d)
 ```
 
 
-The initial model had three latent variables, viz., `SocTrst`, `PolTrst`, and `PolHope` and the covariances were also included in the model. The model fit is shown in Figure X. However, the model did not fit well: $\chi^2 =$ `r o1$ch`, $df =$ `r o1$df`, and most importantly, $RMSEA =$ `r o1$rmsea`, $CFI =$ `r o1$cfi`, $SRMR =$ `r o1$srmr`, and $TLI =$ `r o1$tli`.
+The initial model had three latent variables, viz., `SocTrst`, `PolTrst`, and `PolHope` and the covariances were also included in the model. The model fit is shown in Figure X. However, the model did not fit well: $\chi^2 =$ `r o1$ch`, $p =$ `r o1$p`, $df =$ `r o1$df`, and most importantly, $RMSEA =$ `r o1$rmsea`, $CFI =$ `r o1$cfi`, $SRMR =$ `r o1$srmr`, and $TLI =$ `r o1$tli`.
+
+
+```{r fig1, results="asis", echo=FALSE, fig.cap="Model 1", fig.scap="Model 1"}
+
+p(o1$f)
+
+```
 
 ## Model 2
 
@@ -308,21 +317,41 @@ o2 <- l_o(m2, d)
 
 The modification indices of Model 1 suggested that all the items of political trust and political be allowed to covary. This (together sith poor fit of Model 1) was an indication that those items can load on another factor. Hence, a forth factor was added to explain the remaining covariance of these items. Based on the loadings, it was called *Political Optimism* (coded as `PolOptm), that models a general the positive attitude towards politics.
 
-This model had a decent fit ($\chi^2 =$ `r o2$ch`, $df =$ `r o2$df`, $RMSEA =$ `r o2$rmsea`, $CFI =$ `r o2$cfi`, $SRMR =$ `r o2$srmr`, and $TLI =$ `r o2$tli`.)
+This model, shown in Figure 2, had a decent fit ($\chi^2 =$ `r o2$ch`, df = `r o2$df`, RMSEA = `r o2$rmsea`, CFI = `r o2$cfi`, SRMR = `r o2$srmr`, and TLI = `r o2$tli`.)
 
 
-```{r tbl, results="asis", echo=FALSE, include=TRUE}
+```{r fig2, results="asis", echo=FALSE, fig.cap="Model 2", fig.scap="Model 2"}
 
-kable(o1$l,
-      "latex",
-      caption = "Loadings o model 1",
-      label = "l",
-      booktabs = T,
-      digits = 2)
+p(o2$f)
+
 ```
 
 
 ```{r tbl1, results="asis", echo=FALSE, include=TRUE}
+
+kable(rbind(o1$l, o1$r, o1$thr),
+      "latex",
+      caption = "Estimated parameters of model 1",
+      label = "l",
+      booktabs = T,
+      digits = 2) %>% 
+  kable_styling(latex_options="scale_down")
+```
+
+
+```{r tbl2, results="asis", echo=FALSE, include=TRUE}
+
+kable(rbind(o2$l, o2$r, o2$thr),
+      "latex",
+      caption = "Estimated parameters of model 2",
+      label = "l",
+      booktabs = T,
+      digits = 2) %>% 
+  kable_styling(latex_options="scale_down")
+```
+
+
+```{r tbl111, results="asis", echo=FALSE, include=TRUE}
 
 kable(o1$s %>% filter(est != 0),
       "latex",
